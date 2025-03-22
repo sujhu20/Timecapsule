@@ -434,10 +434,8 @@ export function CapsuleForm({
                           </div>
                           <span className="text-sm font-medium text-slate-700">Uploading {fileName}...</span>
                         </div>
-                        <span className="text-sm font-medium text-blue-600">{uploadProgress}%</span>
                       </div>
                       <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                       </div>
                     </div>
                   ) : (
@@ -618,10 +616,8 @@ export function CapsuleForm({
                           </div>
                           <span className="text-sm font-medium text-slate-700">Optimizing video for time travel...</span>
                         </div>
-                        <span className="text-sm font-medium text-blue-600">{uploadProgress}%</span>
                       </div>
                       <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${uploadProgress}%` }}></div>
                       </div>
                     </div>
                   ) : (
@@ -737,10 +733,8 @@ export function CapsuleForm({
                   <div className="w-full">
                     <div className="flex justify-between mb-1">
                       <span className="text-sm">Uploading...</span>
-                      <span className="text-sm">{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2.5">
-                      <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                     </div>
                   </div>
                 ) : (
@@ -948,10 +942,8 @@ export function CapsuleForm({
                 <div className="col-span-full bg-blue-50 p-3 rounded-md border border-blue-100">
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-blue-700">Uploading {fileName}...</span>
-                    <span className="text-sm text-blue-700">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-white rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
                   </div>
                 </div>
               )}
@@ -1087,10 +1079,8 @@ export function CapsuleForm({
                           </div>
                           <span className="text-sm font-medium text-slate-700">Processing AR/VR asset...</span>
                         </div>
-                        <span className="text-sm font-medium text-purple-600">{uploadProgress}%</span>
                       </div>
                       <div className="w-full bg-purple-100 rounded-full h-2">
-                        <div className="bg-purple-600 h-2 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${uploadProgress}%` }}></div>
                       </div>
                     </div>
                   ) : (
@@ -1457,9 +1447,7 @@ export function CapsuleForm({
                               </div>
                               
                               <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-700 flex items-center justify-center shadow-inner">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.1)_0%,_transparent_70%)] bg-[length:20px_20px]"></div>
                                 <div className="absolute inset-0 opacity-30">
-                                  <div className="absolute inset-0 bg-[length:40px_40px] bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.2)_0%,_transparent_60%)]"></div>
                                 </div>
                                 <div className="relative flex flex-col items-center justify-center text-white p-4">
                                   <Brain className="h-10 w-10 mb-3 animate-pulse" />

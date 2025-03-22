@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -9,12 +9,12 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { EncryptionProvider } from "@/lib/encryptionContext";
 import { cn } from "@/lib/utils";
 
-const geistSans = Geist({
+const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const robotoMono = Roboto_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
@@ -37,11 +37,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icons/favicon.ico', sizes: '256x256' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
     ],
     apple: [
-      { url: '/icons/apple-icon-180x180.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/apple-icon-180x180.svg', sizes: '180x180', type: 'image/svg+xml' },
     ],
   },
 };
@@ -59,7 +59,7 @@ export default function RootLayout({
       */}
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        className={`${inter.variable} ${robotoMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <ThemeProvider
           attribute="class"
