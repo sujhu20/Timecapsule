@@ -321,7 +321,6 @@ export function ViewCapsule({ capsuleId }: ViewCapsuleProps) {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Self-Destruct Countdown</AlertTitle>
             <AlertDescription className="font-bold">
-              This capsule will self-destruct in {Math.floor(selfDestructCountdown / 60)}:{String(selfDestructCountdown % 60).padStart(2, '0')}
             </AlertDescription>
           </Alert>
         )}
