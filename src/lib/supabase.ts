@@ -1,48 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Debug environment variables
-if (process.env.NODE_ENV === 'development') {
-  console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
-}
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable');
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY');
-}
+// Supabase is optional — the primary DB is Prisma/PostgreSQL.
+// If env vars are not set we export null and callers must guard.
 
 // Create a single supabase client for interacting with your database
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    db: {
-      schema: 'public'
-    },
-    global: {
-      headers: {
-        'x-application-name': 'timecapsul'
+export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey
+  ? createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
-      fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
-        const fetchOptions: RequestInit = {
-          ...options,
-          credentials: 'include' as RequestCredentials,
-          mode: 'cors' as RequestMode,
-        };
-        return fetch(url, fetchOptions);
+      db: {
+        schema: 'public'
+      },
+      global: {
+        headers: {
+          'x-application-name': 'timecapsul'
+        },
+        fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
+          const fetchOptions: RequestInit = {
+            ...options,
+            credentials: 'include' as RequestCredentials,
+            mode: 'cors' as RequestMode,
+          };
+          return fetch(url, fetchOptions);
+        }
       }
     }
-  }
-);
+  )
+  : null;
 
 // Debug function to check connection
 export async function checkSupabaseConnection() {
@@ -63,7 +56,7 @@ export async function checkSupabaseConnection() {
     }
 
     console.log('Basic connection test successful, now testing database query...');
-    const { data, error } = await supabase.from('capsules').select('count');
+    const { data, error } = await supabase!.from('capsules').select('count');
     if (error) {
       console.error('Supabase database query error:', error);
       return false;
