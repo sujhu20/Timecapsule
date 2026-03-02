@@ -125,7 +125,8 @@ export const authOptions: NextAuthOptions = {
 
       // Check for user in DB on subsequent requests to keep it fresh
       // (NextAuth sessions last 30 days, we want to ensure the DB ID is always used)
-      if (!token.id || token.id.toString().length < 20 /* heuristic: UUIDs are 36 chars, Google IDs are shorter numeric strings */) {
+      // Prisma UUIDs have dashes and are 36 chars. Google IDs are ~21 char numbers.
+      if (!token.id || !String(token.id).includes('-')) {
         if (token.email) {
           const dbUser = await getUserByEmail(token.email as string);
           if (dbUser) {
