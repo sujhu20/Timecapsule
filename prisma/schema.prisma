@@ -3,116 +3,100 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String?
-  password      String? // Hashed password for credentials auth
-  image         String? // For OAuth profile images
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String              @id @default(dbgenerated("(gen_random_uuid())::text"))
+  email              String              @unique
+  name               String?
+  password           String?
+  image              String?
+  emailVerified      DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+  emailNotifications Boolean             @default(true)
+  unlockReminders    Boolean             @default(true)
+  weeklyDigest       Boolean             @default(false)
+  marketingEmails    Boolean             @default(false)
+  auditLogs          AuditLog[]
+  capsules           Capsule[]
+  comments           Comment[]
+  following          Follows[]           @relation("follower")
+  followers          Follows[]           @relation("following")
+  likes              Like[]
+  verificationTokens VerificationToken[]
 
-  // Notification preferences
-  emailNotifications Boolean @default(true)
-  unlockReminders    Boolean @default(true)
-  weeklyDigest       Boolean @default(false)
-  marketingEmails    Boolean @default(false)
-
-  capsules            Capsule[]
-  auditLogs           AuditLog[]
-  comments            Comment[]
-  likes               Like[]
-  followers           Follows[]           @relation("following")
-  following           Follows[]           @relation("follower")
-  verificationTokens  VerificationToken[]
-
-  // Performance index for login queries
   @@index([email])
 }
 
 model Capsule {
-  id         String   @id @default(uuid())
-  title      String
-  content    String // Encrypted content
-  createdAt  DateTime @default(now())
-  unlockTime DateTime
-  isLocked   Boolean  @default(true)
-  ownerId    String
-  owner      User     @relation(fields: [ownerId], references: [id])
-
-  // Digital Trustee / Legacy fields
+  id             String     @id @default(dbgenerated("(gen_random_uuid())::text"))
+  title          String
+  content        String
+  createdAt      DateTime   @default(now())
+  unlockTime     DateTime
+  isLocked       Boolean    @default(true)
+  ownerId        String
   recipientName  String?
   recipientEmail String?
+  privacy        String     @default("private")
+  auditLogs      AuditLog[]
+  owner          User       @relation(fields: [ownerId], references: [id])
+  comments       Comment[]
+  likes          Like[]
 
-  // Social fields
-  likes    Like[]
-  comments Comment[]
-  privacy  String    @default("private") // public, private
-
-  auditLogs AuditLog[]
-
-  // Performance indexes
   @@index([ownerId, createdAt])
   @@index([unlockTime, isLocked])
   @@index([privacy])
 }
 
 model Comment {
-  id        String   @id @default(uuid())
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   content   String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  updatedAt DateTime @default(now()) @updatedAt
+  userId    String
   capsuleId String
-  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  capsule   Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Performance index for comment threads
   @@index([capsuleId, createdAt])
 }
 
 model Like {
-  id        String   @id @default(uuid())
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   createdAt DateTime @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  userId    String
   capsuleId String
-  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  capsule   Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, capsuleId])
-  // Performance index for like counts
   @@index([capsuleId])
 }
 
 model Follows {
-  follower    User   @relation("follower", fields: [followerId], references: [id])
   followerId  String
-  following   User   @relation("following", fields: [followingId], references: [id])
   followingId String
+  follower    User   @relation("follower", fields: [followerId], references: [id])
+  following   User   @relation("following", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   action    String
   capsuleId String?
   userId    String?
-  capsule   Capsule? @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   timestamp DateTime @default(now())
   details   String?
+  capsule   Capsule? @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Performance indexes for audit log queries
   @@index([userId, timestamp])
   @@index([capsuleId, timestamp])
   @@index([action, timestamp])
@@ -120,12 +104,12 @@ model AuditLog {
 
 /// Used for email address verification (credentials sign-up flow)
 model VerificationToken {
-  id        String   @id @default(uuid())
-  token     String   @unique // SHA-256 hashed token
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([userId])

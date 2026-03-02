@@ -83,7 +83,16 @@ export default function DashboardClient() {
           let errorMessage;
           try {
             const errorData = await response.json();
-            errorMessage = errorData.error || `Server returned ${response.status}: ${response.statusText}`;
+            // Handle various API error formats
+            if (typeof errorData.error === 'string') {
+              errorMessage = errorData.error;
+            } else if (errorData.error?.message) {
+              errorMessage = errorData.error.message;
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            } else {
+              errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+            }
           } catch (e) {
             errorMessage = `Server returned ${response.status}: ${response.statusText}`;
           }

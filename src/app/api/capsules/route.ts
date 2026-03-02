@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     logger.error('Error fetching capsules', error);
-    return apiError('Failed to fetch capsules', 500, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return apiError('Failed to fetch capsules', 500, errorMessage);
   }
 }
 
