@@ -1,0 +1,109 @@
+name: Automated Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    name: PostgreSQL Backup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run backup script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          S3_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
+          S3_REGION: ${{ secrets.AWS_REGION }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          BACKUP_DIR: /tmp/backups
+        run: |
+          chmod +x scripts/backup-production.sh
+          ./scripts/backup-production.sh
+
+      - name: Upload backup artifact (for redundancy)
+        uses: actions/upload-artifact@v3
+        with:
+          name: database-backup-${{ github.run_number }}
+          path: /tmp/backups/timecapsule_*.dump
+          retention-days: 7
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"🔴 CRITICAL: Database backup failed! Check GitHub Actions logs immediately."}'
+
+  verify-backup:
+    name: Verify Backup Integrity
+    runs-on: ubuntu-latest
+    needs: backup
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download backup artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: database-backup-${{ github.run_number }}
+          path: /tmp/backups
+
+      - name: Install PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib
+
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres createuser -s runner
+
+      - name: Verify backup can be restored
+        run: |
+          # Create test database
+          createdb timecapsule_test
+          
+          # Find backup file
+          BACKUP_FILE=$(ls /tmp/backups/timecapsule_*.dump | head -1)
+          
+          # Restore backup
+          pg_restore -d timecapsule_test --no-owner --no-acl "$BACKUP_FILE"
+          
+          # Verify tables exist
+          psql timecapsule_test -c "SELECT COUNT(*) FROM \"User\";"
+          psql timecapsule_test -c "SELECT COUNT(*) FROM \"Capsule\";"
+          
+          echo "✅ Backup verification successful"
+
+      - name: Notify verification success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"✅ Database backup verified successfully"}'
+
+      - name: Notify verification failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"🔴 CRITICAL: Backup verification failed! Backup may be corrupted."}'
