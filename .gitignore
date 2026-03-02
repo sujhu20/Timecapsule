@@ -42,3 +42,8 @@ next-env.d.ts
 **/public/workbox-*.js.map
 **/public/worker-*.js.map 
 /generated/prisma
+time-capsule/
+# Log files
+dev_server_log*.txt
+build_log*.txt
+*.log
