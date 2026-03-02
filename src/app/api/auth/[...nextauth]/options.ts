@@ -70,11 +70,6 @@ export const authOptions: NextAuthOptions = {
       if (account && account.provider && account.provider !== 'credentials') {
         if (!user.email) {
           console.error(`OAuth sign in failed: No email provided by ${account.provider}`);
-          // In development mode, allow even without email
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[DEV] Allowing OAuth sign-in without email in development mode');
-            return true;
-          }
           return false;
         }
 
@@ -90,29 +85,17 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!dbUser) {
-            console.error(`Failed to handle OAuth user from ${account.provider}`);
-
-            // In development mode, allow sign-in even if user handling fails
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[DEV] Allowing OAuth sign-in despite user handling failure');
-              return true;
-            }
-
-            return false;
+            // Log but DON'T block sign-in — the JWT callback will re-fetch the user
+            console.error(`DB upsert failed for OAuth user from ${account.provider} — allowing sign-in anyway`);
+          } else {
+            console.log(`OAuth sign-in successful for user: ${dbUser.email}`);
           }
 
-          console.log(`OAuth sign-in successful for user: ${dbUser.email}`);
           return true;
         } catch (error) {
-          console.error('Error during OAuth sign in:', error);
-
-          // In development mode, allow sign in despite errors
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[DEV] Allowing OAuth sign-in despite error in development mode');
-            return true;
-          }
-
-          return false;
+          // Log but allow — a DB error shouldn't lock the user out entirely
+          console.error('Error during OAuth sign in (non-blocking):', error);
+          return true;
         }
       }
 
