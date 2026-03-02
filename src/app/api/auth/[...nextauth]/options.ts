@@ -103,71 +103,37 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account }) {
-      // Initial sign in
+      // Initial sign in - either OAuth or Credentials
       if (user) {
-        console.log('JWT initial sign in with user data:', {
-          hasId: !!user.id,
-          hasSub: !!(user as any).sub,
-          email: user.email ? user.email.substring(0, 3) + '...' : 'none',
-          provider: account?.provider || 'credentials'
-        });
-
+        // user object is available on original sign in
         token.id = user.id;
-        token.sub = user.id; // Ensure sub is set to user.id
+        token.sub = user.id;
 
-        // In development mode, set a fallback ID if none exists
-        if ((!token.id || !token.sub) && process.env.NODE_ENV === 'development') {
-          const mockId = '254067f1-ddd6-4376-bbad-35a75f5df44d';
-          console.log(`[DEV] Setting fallback user ID in JWT: ${mockId}`);
-          token.id = mockId;
-          token.sub = mockId;
-        }
-
-        // Generate ID from email if missing
-        if (!token.id && !token.sub && user.email) {
-          console.log('Generating user ID from email');
-          const crypto = require('crypto');
-          // Use a simple hash of the email to create a consistent ID
-          const emailHash = crypto.createHash('md5').update(user.email).digest('hex');
-          const generatedId = emailHash.slice(0, 8) + '-' + emailHash.slice(8, 12) + '-' +
-            emailHash.slice(12, 16) + '-' + emailHash.slice(16, 20) + '-' +
-            emailHash.slice(20, 32);
-
-          token.id = generatedId;
-          token.sub = generatedId;
-          console.log(`Generated user ID: ${generatedId} for email: ${user.email.substring(0, 3)}...`);
-        }
-      }
-
-      // OAuth sign in
-      if (account && account.provider) {
-        console.log(`JWT: OAuth sign-in via ${account.provider}`);
-        token.provider = account.provider;
-
-        // For OAuth logins, ensure we have the user data from our DB
-        if (token.email) {
-          const dbUser = await getUserByEmail(token.email as string);
-          if (dbUser) {
-            console.log(`JWT: Found existing user in DB for ${token.email}`);
-            token.id = dbUser.id;
-            token.sub = dbUser.id;
-          } else if (process.env.NODE_ENV === 'development') {
-            // In development, if we don't find the user in the DB, create a fallback
-            console.log(`[DEV] Using backup user ID in JWT for OAuth user`);
-            if (!token.id && !token.sub) {
-              const mockId = '254067f1-ddd6-4376-bbad-35a75f5df44d';
-              token.id = mockId;
-              token.sub = mockId;
+        // If this is an OAuth login, we need to get the real DB ID instead of the OAuth provider's ID
+        if (account && account.provider !== 'credentials') {
+          token.provider = account.provider;
+          if (user.email) {
+            const dbUser = await getUserByEmail(user.email);
+            if (dbUser) {
+              // Override the provider's ID with our internal Prisma UUID
+              token.id = dbUser.id;
+              token.sub = dbUser.id;
             }
           }
         }
       }
 
-      console.log('JWT token after processing:', {
-        hasId: !!token.id,
-        hasSub: !!token.sub,
-        provider: token.provider || 'none'
-      });
+      // Check for user in DB on subsequent requests to keep it fresh
+      // (NextAuth sessions last 30 days, we want to ensure the DB ID is always used)
+      if (!token.id || token.id.toString().length < 20 /* heuristic: UUIDs are 36 chars, Google IDs are shorter numeric strings */) {
+        if (token.email) {
+          const dbUser = await getUserByEmail(token.email as string);
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.sub = dbUser.id;
+          }
+        }
+      }
 
       return token;
     },
