@@ -97,6 +97,6 @@ export async function handleOAuthUser(userData: {
     return user;
   } catch (error) {
     console.error('Error handling OAuth user:', error);
-    return null;
+    throw error;
   }
 }

@@ -85,17 +85,16 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!dbUser) {
-            // Log but DON'T block sign-in — the JWT callback will re-fetch the user
-            console.error(`DB upsert failed for OAuth user from ${account.provider} — allowing sign-in anyway`);
+            console.error(`DB upsert failed for OAuth user from ${account.provider} — blocking sign-in to prevent ghost sessions`);
+            return false;
           } else {
-            console.log(`OAuth sign-in successful for user: ${dbUser.email}`);
+            console.log(`OAuth sign-in successful and synced for user: ${dbUser.email}`);
           }
 
           return true;
         } catch (error) {
-          // Log but allow — a DB error shouldn't lock the user out entirely
-          console.error('Error during OAuth sign in (non-blocking):', error);
-          return true;
+          console.error('Critical Error during OAuth sign in (blocking):', error);
+          return false;
         }
       }
 
